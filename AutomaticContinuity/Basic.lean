@@ -231,7 +231,8 @@ theorem empty_IsMeagre [BaireSpace X] : IsMeagre (∅ : Set X) := by
   by_contra h
   simp only [IsMeagre, compl_empty, univ_mem, not_true_eq_false] at h
 
-
+theorem BaireTheorem.nonMeagre_of_univ [Nonempty X] [BaireSpace X]
+    : ¬ (IsMeagre (univ : Set X)) := by sorry
 
 
 variable [TopologicalSpace G] [IsTopologicalGroup G] [BaireSpace G] [MeasurableSpace G] [BorelSpace G]
@@ -467,200 +468,103 @@ theorem pettis' {A : Set G} (hBM : BaireMeasurableSet A) (hA : ¬ IsMeagre A)
   exact pettis h0 h1
 
 variable {H: Type*} [Group H] [TopologicalSpace H] [IsTopologicalGroup H] [BaireSpace H]
-  [MeasurableSpace H] [BorelSpace H]
+  [MeasurableSpace H] [BorelSpace H] [SecondCountableTopology H]
 
 
-lemma lem3 {U : Set H} (hU : U ∈ 𝓝 1)
-  : ∃ V ∈ 𝓝 1, V⁻¹ * V ⊆ U := by
-    set m : H × H → H := fun p ↦ p.1⁻¹ * p.2
-    have h_cont' : Continuous m := by continuity
-    have h_cont : ContinuousAt m ⟨1, 1⟩ := by exact Continuous.continuousAt h_cont'
-    have h_image : m ⟨1, 1⟩ = 1 := by simp [m]
-    simp only [ContinuousAt, h_image] at h_cont
 
-    have t := h_cont hU
-    simp at t
-    obtain ⟨V1, hV1, V2, hV2, hV_sub⟩ :=  mem_nhds_prod_iff.mp t
-    use V1 ∩ V2
-    refine ⟨Filter.inter_mem hV1 hV2, ?_⟩
-    have hmV_sub : m '' V1 ×ˢ V2 ⊆ U := by simpa
-    have hmV_def: m '' V1 ×ˢ V2 = V1⁻¹ * V2 := by
-      simp [m]
-
-      ext x
-      constructor
-
-      intro h
-      simp at h
-      obtain ⟨a, b, ⟨ha, hb⟩, himg⟩ := h
-      simp [HSMul.hSMul, SMul.smul, HMul.hMul, Mul.mul]
-      rw [← himg]
-      use a⁻¹
-      constructor
-      simpa
-      use b
-      constructor
-      assumption
-      rfl
-
-      intro h
-      simp
-      simp [HSMul.hSMul, SMul.smul, HMul.hMul, Mul.mul] at h
-      obtain ⟨a, ha, b, hb, hab⟩ := h
-      use a⁻¹
-      use b
-      use ⟨ha, hb⟩
-      simpa
-    have h100 : ((V1 ∩ V2)⁻¹ * (V1 ∩ V2)) ⊆ V1⁻¹ * V2 := by
-      apply Set.mul_subset_mul
-      simp
-      simp
-    rw [←hmV_def] at h100
-
-    exact fun ⦃a⦄ a_1 ↦ hmV_sub (h100 a_1)
-
-lemma lem3' {U : Set H} (hU : U ∈ 𝓝 1)
-    : ∃ V, IsOpen V ∧ 1 ∈ V ∧ V⁻¹ * V ⊆ U := by
-  obtain ⟨V, h_1_V, hVU⟩ := lem3 hU
-  obtain ⟨W, hWV, hW_open, hW_1⟩ := eventually_nhds_iff.mp h_1_V
-  use W
-  refine ⟨hW_open, hW_1, ?_⟩
-  have : W⁻¹ ⊆ V⁻¹ := by exact fun ⦃a⦄ ↦ hWV a⁻¹
-  have : W⁻¹ * W ⊆ V⁻¹ * V := by exact mul_subset_mul this hWV
-  exact fun ⦃a⦄ a_1 ↦ hVU (this a_1)
-
-lemma lem4 (D : Set H) (h_D_dense : Dense D) (V : Set H) (h_V_open : IsOpen V)
-  (h_V_nonempty : V.Nonempty)
-  : ⋃ d ∈ D, d • V = ⊤ := by
-    ext x
-    constructor
-    . intro h
-      simp at h
-      obtain ⟨i, hi⟩ := h
-      trivial
-    intro h
-    obtain ⟨v, hv⟩ := h_V_nonempty
-    have V_inv_open : IsOpen V⁻¹ := by exact IsOpen.inv h_V_open
-    have h_V_open' : IsOpen (x • V⁻¹) := by exact IsOpen.smul V_inv_open x
-    have h_nonempty : (x • V⁻¹).Nonempty := by
-      use x • v⁻¹
-      simpa [HSMul.hSMul, SMul.smul]
-    have h1 : ∃ d ∈ D, d ∈ x • V⁻¹ := by
-      exact Dense.exists_mem_open h_D_dense h_V_open' h_nonempty
-    obtain ⟨d, hdD, hdxV⟩ := h1
-    have h2 : x ∈ d • V := by
-      simp at hdxV
-      assumption
-    simp
-    exact ⟨d, hdD, h2⟩
+-- Add this next to exists_closed_nhds_one_inv_eq_mul_subset in
+-- Topology/Algebra/Group/Pointwise.lean
+/-- Given a neighborhood `U` of the identity, one may find a neighborhood `V` of the identity which
+is open, symmetric, and satisfies `V * V ⊆ U`. -/
+@[to_additive "Given a neighborhood `U` of the identity, one may find a neighborhood `V` of the
+identity which is open, symmetric, and satisfies `V + V ⊆ U`."]
+theorem exists_open_nhds_one_inv_eq_mul_subset {U : Set G} (hU : U ∈ 𝓝 1) :
+    ∃ V ∈ 𝓝 1, IsOpen V ∧ V⁻¹ = V ∧ V * V ⊆ U := by
+  rcases exists_open_nhds_one_mul_subset hU with ⟨V, V_open, V_one, hV⟩
+  --rcases exists_mem_nhds_isClosed_subset (V_open.mem_nhds V_mem) with ⟨W, W_mem, W_closed, hW⟩
+  have V_mem : V ∈ 𝓝 1 := V_open.mem_nhds V_one
+  refine ⟨V ∩ V⁻¹, Filter.inter_mem V_mem (inv_mem_nhds_one G V_mem), V_open.inter V_open.inv,
+    by simp [inter_comm], ?_⟩
+  calc
+  V ∩ V⁻¹ * (V ∩ V⁻¹)
+  _ ⊆ V * V := mul_subset_mul inter_subset_left inter_subset_left
+  _ ⊆ U := hV
 
 
 open TopologicalSpace
 
-variable [SeparableSpace H]
+variable [SeparableSpace H] [BorelSpace H]
 
-theorem automatic_continuity {φ : G →* H} (h: Measurable φ)
-  : Continuous φ := by
-  constructor
+example {φ : G →* H} (h : ContinuousAt φ 1) : (Continuous φ) := continuous_of_continuousAt_one φ h
+
+lemma automatic_continuity {φ : G →* H} (h: Measurable φ) : Continuous φ := by
+  -- Enough to show continuous at 1
+  apply continuous_of_continuousAt_one
+
+  rw [continuousAt_def, map_one]
   intro U hU
-  have h0 : MeasurableSet U := by exact IsOpen.measurableSet hU
-  set preU := φ ⁻¹' U
-  have h10 : MeasurableSet preU := by
-    exact h h0
-  rw [isOpen_iff_mem_nhds]
-  intro g hg
-  have h_Im_g_in_U: φ g ∈ U := by exact hg
-  have h_1_in_ginvU : 1 ∈ (φ g)⁻¹ • U := by
-    use φ g
-    refine ⟨h_Im_g_in_U, ?_⟩
-    simp
-  have h_ginvU_open : IsOpen ((φ g)⁻¹ • U) := by
-    exact IsOpen.smul hU (φ g)⁻¹
+  obtain ⟨V, h_V_mem, h_V_open, h_V_symm, h_V_U⟩ := exists_open_nhds_one_inv_eq_mul_subset hU
 
-  have : (φ g)⁻¹ • U ∈ 𝓝 1 := by exact IsOpen.mem_nhds h_ginvU_open h_1_in_ginvU
-  have ⟨V, h_V_open, h_1_in_V, h_V_U⟩ := lem3' this
+  set m : H → Set H := fun h ↦ h • V
+  have hasdf : ∀ h, m h ∈ nhds h := by
+    intro h
+    dsimp [m]
+    exact smul_mem_nhds_self.mpr h_V_mem
 
-  have h_V_nonempty : V.Nonempty := by exact Set.nonempty_of_mem h_1_in_V
+  obtain ⟨D, hD_countable, h1⟩ : ∃ (D : Set H), D.Countable ∧ ⋃ d ∈ D, m d = univ
+    := TopologicalSpace.countable_cover_nhds hasdf
 
-  have ⟨D, hD_countable, hD_dense⟩ := exists_countable_dense H
-
-  have h1 : ⋃ h ∈ D, h • V = ⊤ := by exact lem4 D hD_dense V h_V_open h_V_nonempty
-  have h11 : φ⁻¹' (⋃ h ∈ D, h • V) = ⋃ h ∈ D, φ⁻¹' (h • V) := by
-    exact preimage_iUnion₂
-  have h2 : ⋃ h ∈ D, φ⁻¹' (h • V) = ⊤ := by
-    rw [←h11, h1]
+  have h2 : ⋃ h ∈ D, φ⁻¹' (h • V) = univ := by
+    rw [←preimage_iUnion₂, h1]
     rfl
-  have h100 : ¬ (IsMeagre (⊤ : Set G)) := by
-    by_contra h
-    simp [IsMeagre] at h
-    apply nonempty_of_residual at h
-    simp at h
+
   have h101 : ∃ d ∈ D, ¬ IsMeagre (φ⁻¹' (d • V)) := by
     by_contra h_contra
     simp at h_contra
-    have : Countable ↑D := by exact hD_countable
-    have : IsMeagre (⋃ h ∈ D, φ⁻¹' (h • V)) := by
-      rw [biUnion_eq_iUnion]
-      apply isMeagre_iUnion'
-      simpa
-    rw [h2] at this
-    contradiction
-  obtain ⟨d, hd, hnonmeagre⟩ := h101
-  set A := φ⁻¹' (d • V)
-  have h38 : IsOpen (d • V) := by exact IsOpen.smul h_V_open d
-  have h83 : MeasurableSet (d • V) := by exact IsOpen.measurableSet h38
-  have h385 : MeasurableSet A := by exact h h83
-  have h39 : BaireMeasurableSet A := by
-    exact MeasurableSet.baireMeasurableSet h385
-  have h4 : A⁻¹ * A ∈ nhds 1 := by exact pettis' h39 hnonmeagre
-  have h222: g • (A⁻¹ * A) ∈ nhds g := by exact smul_mem_nhds_self.mpr h4
-  have h23 : φ '' (g • (A⁻¹ * A)) ⊆ U := by
-    intro x hx
-    simp at hx
-    obtain ⟨x_1, hx_1, hx_2⟩ := hx
-    simp [HSMul.hSMul, SMul.smul] at hx_1
-    obtain ⟨a_1, ha_1, a_2, ha_2, ha_x⟩ := hx_1
-    simp at ha_x
-    rw [← hx_2]
-    have h143 : x_1 = g * (a_1 * a_2) := by exact eq_mul_of_inv_mul_eq (id (Eq.symm ha_x))
-    rw [h143]
-    simp
-    have h123 : φ a_2 ∈ d • V := by exact ha_2
-    have h12340 : φ '' A ⊆ d • V := by
-      dsimp [A]
-      exact image_preimage_subset (⇑φ) (d • V)
-    have h1232 : φ a_1 ∈ (φ '' A)⁻¹ := by
-      simp
-      use a_1⁻¹
-      constructor
-      assumption
-      simp
-    have h124 : φ a_1 ∈ (d • V)⁻¹ := by
-      exact h12340 h1232
-    have h2323 : φ a_1 * φ a_2 ∈ V⁻¹ * V := by
-      obtain ⟨v_1, h_v_1, h_v_12⟩ := h123
-      obtain ⟨v_2, h_v_2, h_v_22⟩ := h124
-      simp at h_v_12 h_v_22
-      have h_v_222 : (d * v_2)⁻¹ = φ a_1 := by exact inv_eq_iff_eq_inv.mpr h_v_22
-      rw [←h_v_12, ←h_v_222]
-      have h_v_2111 : v_2⁻¹ ∈ V⁻¹ := by exact Set.inv_mem_inv.mpr h_v_2
-      use v_2⁻¹
-      constructor
-      exact h_v_2111
-      use v_1
-      constructor
-      exact h_v_1
-      simp
-      group
 
-    have h_V_U_2 : (φ g) • (V⁻¹ * V) ⊆ U := by
-      exact Set.smul_set_subset_iff_subset_inv_smul_set.mpr h_V_U
-    have h3213 : φ g * (φ a_1 * φ a_2) ∈ φ g • (V⁻¹ * V) := by
-      exact mem_leftCoset (φ g) h2323
-    exact h_V_U_2 h3213
-  have h234 : g • (A⁻¹ * A) ⊆ preU := by
-    simp at h23
-    simpa [preU]
-  exact mem_of_superset h222 h234
+    --have : Countable ↑D := by exact hD_countable
+    have : IsMeagre (⋃ h ∈ D, φ⁻¹' (h • V)) := by
+      rw [IsMeagre, compl_iUnion]
+      dsimp [IsMeagre] at h_contra
+      simp
+      exact (countable_bInter_mem hD_countable).mpr h_contra
+
+    rw [h2] at this
+    have a : ¬ IsMeagre (univ : Set G) := BaireTheorem.nonMeagre_of_univ
+    contradiction
+
+  obtain ⟨d, hd, hnonmeagre⟩ : ∃ d ∈ D, ¬ IsMeagre (φ⁻¹' (d • V)) := h101
+
+  set A := φ⁻¹' (d • V)
+  have : BaireMeasurableSet A := (h (h_V_open.smul d).measurableSet).baireMeasurableSet
+  have h4 : A⁻¹ * A ∈ nhds 1 := by exact pettis' this hnonmeagre
+
+  have h234 : φ '' A ⊆ d • V := by
+    dsimp [A]
+    exact image_preimage_subset (⇑φ) (d • V)
+  have h23 : φ '' (A⁻¹ * A) ⊆ U := by
+    calc
+      φ '' (A⁻¹ * A)
+        = (φ '' A⁻¹) * (φ '' A) := by
+          exact image_mul φ
+      _ = (φ '' A)⁻¹ * (φ '' A) := by
+          exact congrFun (congrArg HMul.hMul (image_inv φ A)) (φ '' A)
+      _ ⊆ (d • V)⁻¹ * (d • V) := by
+          have : φ '' A ⊆ d • V := by
+            dsimp [A]
+            exact image_preimage_subset (⇑φ) (d • V)
+          refine mul_subset_mul (inv_subset_inv.mpr h234) h234
+      _ ⊆ V⁻¹ * V := by
+
+          sorry
+      _ ⊆ U := by
+          rw [h_V_symm]
+          exact h_V_U
+
+
+  have h234 : A⁻¹ * A ⊆ φ ⁻¹' U := by
+    simpa using h23
+
+  exact mem_of_superset h4 h234
 
 #print axioms automatic_continuity
