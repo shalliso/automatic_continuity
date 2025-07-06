@@ -559,7 +559,7 @@ open TopologicalSpace
 
 variable [SeparableSpace H]
 
-theorem automatic_continuity [Nonempty X] {φ : G →* H} (h: Measurable φ)
+theorem automatic_continuity {φ : G →* H} (h: Measurable φ)
   : Continuous φ := by
   constructor
   intro U hU
