@@ -8,30 +8,41 @@ variable {G : Type*} [Group G] [TopologicalSpace G] [IsTopologicalGroup G]
 variable [MulAction G X] [ContinuousConstSMul G X]
 variable [MeasurableSpace G] [BorelSpace G] [BaireSpace G]
 
+example {A : Set G} {x : G} {v : G} (h : A (v⁻¹ • x)) : (v • A) x := by
+  rw [←preimage_smul_inv]
+  simpa using h
+
+
 lemma pettis_0 {A : Set G} {U : Set G} (hU : U ∈ 𝓝 1) (hAU : A =ᶠ[residual G] U) : A⁻¹ * A ∈ 𝓝 1 := by
   obtain ⟨V, h_V_mem, h_V_open, h_V_symm, h_V_U⟩ := exists_open_nhds_one_inv_eq_mul_subset hU
   refine Filter.mem_of_superset h_V_mem ?_
 
   intro v hv
 
-  have h1 : (A⁻¹ : Set G) =ᶠ[residual G] (U⁻¹ : Set G) := by
-
-    sorry
+  have h1 : (A⁻¹ : Set G) =ᶠ[residual G] (U⁻¹ : Set G) := residual_inv hAU
   have h2 : (v⁻¹ • A⁻¹ : Set G) =ᶠ[residual G] (v⁻¹ • U⁻¹) := by
-
-    sorry
+    simp [EventuallyEq, Filter.Eventually] at hAU ⊢ h1
+    have : v⁻¹ • {x | A⁻¹ x ↔ U⁻¹ x} = {x | (v⁻¹ • A⁻¹) x ↔ (v⁻¹ • U⁻¹) x} := by
+      calc
+        v⁻¹ • {x | A⁻¹ x ↔ U⁻¹ x}
+          = {x | A⁻¹ (v • x) ↔ U⁻¹ (v • x)} := by rw [←preimage_smul_inv]; simp
+        _ = {x | (v⁻¹ • A⁻¹) x ↔ (v⁻¹ • U⁻¹) x} := by simp only [←preimage_smul_inv, inv_inv] ;rfl
+    rw [←this]
+    exact residual_smul v⁻¹ h1
   have : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G) =ᶠ[residual G] ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G) := by
     exact EventuallyEq.inter h2 h1
-  have : ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G).Nonempty := by sorry
+  have : ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G).Nonempty := by
+    use 1
+    constructor
+    · simpa using h_V_U ⟨v⁻¹, by rw [←h_V_symm]; simpa, 1, mem_of_mem_nhds h_V_mem, by simp⟩
+    · simpa using h_V_U ⟨1, mem_of_mem_nhds h_V_mem, 1, mem_of_mem_nhds h_V_mem, by simp⟩
   have : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G).Nonempty := by sorry
 
   obtain ⟨g, hgA, hgAv⟩ := this
 
-  have : v * g ∈ A⁻¹ := by sorry
-  have : g⁻¹ ∈ A := by sorry
-
-  have : (v * g) * g⁻¹ ∈ A⁻¹ * A := by sorry
-
+  have ha : v • g ∈ A⁻¹ := by rwa [← mem_inv_smul_set_iff]
+  have hb : g⁻¹ ∈ A := by rwa [← Set.mem_inv]
+  have : (v * g) * g⁻¹ ∈ A⁻¹ * A := ⟨v • g, ha, g⁻¹, hb, by simp⟩
   simpa using this
 
 theorem pettis {A : Set G} (hBM : BaireMeasurableSet A) (hA : ¬ IsMeagre A)

@@ -41,7 +41,7 @@ variable [MulAction G X] [ContinuousConstSMul G X]
 
 open Pointwise
 
-theorem residual_smul {A : Set X} {g : G} (hA : A ∈ residual X) : g • A ∈ residual X :=
+theorem residual_smul {A : Set X} (g : G) (hA : A ∈ residual X) : g • A ∈ residual X :=
   (Homeomorph.smul g).image_residual hA
 
 variable [TopologicalSpace G] [IsTopologicalGroup G]
