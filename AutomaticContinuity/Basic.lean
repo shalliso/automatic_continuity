@@ -1,6 +1,7 @@
 import Mathlib
 import AutomaticContinuity.Pointwise
 import AutomaticContinuity.Homeomorph
+import AutomaticContinuity.Baire
 
 open Filter Set Topology Pointwise
 variable {X : Type*} [TopologicalSpace X]
@@ -8,10 +9,16 @@ variable {G : Type*} [Group G] [TopologicalSpace G] [IsTopologicalGroup G]
 variable [MulAction G X] [ContinuousConstSMul G X]
 variable [MeasurableSpace G] [BorelSpace G] [BaireSpace G]
 
-example {A : Set G} {x : G} {v : G} (h : A (v⁻¹ • x)) : (v • A) x := by
-  rw [←preimage_smul_inv]
-  simpa using h
-
+lemma residual_smul_eventuallyEq {A B : Set X} {g : G} (h : A =ᶠ[residual X] B)
+    : g • A =ᶠ[residual X] g • B := by
+  simp [EventuallyEq, Filter.Eventually] at h ⊢
+  have : g • {x | A x ↔ B x} = {x | (g • A) x ↔ (g • B) x} := by
+    calc
+      g • {x | A x ↔ B x}
+        = {x | A (g⁻¹ • x) ↔ B (g⁻¹ • x)} := by rw [←preimage_smul_inv]; simp
+      _ = {x | (g • A) x ↔ (g • B) x} := by simp only [←preimage_smul_inv] ;rfl
+  rw [←this]
+  exact residual_smul g h
 
 lemma pettis_0 {A : Set G} {U : Set G} (hU : U ∈ 𝓝 1) (hAU : A =ᶠ[residual G] U) : A⁻¹ * A ∈ 𝓝 1 := by
   obtain ⟨V, h_V_mem, h_V_open, h_V_symm, h_V_U⟩ := exists_open_nhds_one_inv_eq_mul_subset hU
@@ -21,22 +28,44 @@ lemma pettis_0 {A : Set G} {U : Set G} (hU : U ∈ 𝓝 1) (hAU : A =ᶠ[residua
 
   have h1 : (A⁻¹ : Set G) =ᶠ[residual G] (U⁻¹ : Set G) := residual_inv hAU
   have h2 : (v⁻¹ • A⁻¹ : Set G) =ᶠ[residual G] (v⁻¹ • U⁻¹) := by
-    simp [EventuallyEq, Filter.Eventually] at hAU ⊢ h1
-    have : v⁻¹ • {x | A⁻¹ x ↔ U⁻¹ x} = {x | (v⁻¹ • A⁻¹) x ↔ (v⁻¹ • U⁻¹) x} := by
-      calc
-        v⁻¹ • {x | A⁻¹ x ↔ U⁻¹ x}
-          = {x | A⁻¹ (v • x) ↔ U⁻¹ (v • x)} := by rw [←preimage_smul_inv]; simp
-        _ = {x | (v⁻¹ • A⁻¹) x ↔ (v⁻¹ • U⁻¹) x} := by simp only [←preimage_smul_inv, inv_inv] ;rfl
-    rw [←this]
-    exact residual_smul v⁻¹ h1
-  have : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G) =ᶠ[residual G] ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G) := by
+    exact residual_smul_eventuallyEq h1
+  have h39 : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G) =ᶠ[residual G] ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G) := by
     exact EventuallyEq.inter h2 h1
-  have : ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G).Nonempty := by
+  have h40 : ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G).Nonempty := by
     use 1
     constructor
     · simpa using h_V_U ⟨v⁻¹, by rw [←h_V_symm]; simpa, 1, mem_of_mem_nhds h_V_mem, by simp⟩
     · simpa using h_V_U ⟨1, mem_of_mem_nhds h_V_mem, 1, mem_of_mem_nhds h_V_mem, by simp⟩
-  have : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G).Nonempty := by sorry
+  have h41 : U⁻¹ ∈ 𝓝 1 := by exact inv_mem_nhds_one G hU
+  have h42 : U⁻¹ ∈ 𝓝 v := by
+    rw [mem_nhds_iff]
+    use V
+    refine ⟨?_, h_V_open, hv⟩
+
+    have h43 : 1 ∈ V := by exact mem_of_mem_nhds h_V_mem
+    have h44 : V⁻¹ ⊆ U := by
+      rw [h_V_symm]
+      intro x hx
+      have hxV : x ∈ V := hx
+      have h1V : 1 ∈ V := h43
+      have hmul : x * 1 ∈ V * V := mul_mem_mul hxV h1V
+      simp at hmul
+      exact h_V_U hmul
+    exact inv_subset.mp h44
+  have h46 : v⁻¹ • U⁻¹ ∈ 𝓝 1 := by
+    rw [← (smul_mem_nhds_smul_iff v)]
+    simpa
+  have h47 : (v⁻¹ • U⁻¹) ∩ U⁻¹ ∈ 𝓝 1 :=  by exact inter_mem h46 h41
+
+  have h48 : ¬ IsMeagre ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G) := by
+    exact NonMeagre_of_mem_nhds h47
+
+
+  have h49 : ¬ IsMeagre ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G) := mt
+    (isMeagre_congr_residual h39).mp h48
+
+  have : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G).Nonempty := by
+    exact nonempty_of_NonMeagre h49
 
   obtain ⟨g, hgA, hgAv⟩ := this
 
@@ -47,15 +76,22 @@ lemma pettis_0 {A : Set G} {U : Set G} (hU : U ∈ 𝓝 1) (hAU : A =ᶠ[residua
 
 theorem pettis {A : Set G} (hBM : BaireMeasurableSet A) (hA : ¬ IsMeagre A)
     : A⁻¹ * A ∈ nhds 1 := by
-  sorry
+  obtain ⟨U, hU, AU⟩ := hBM.residualEq_isOpen
+  have : ¬ IsMeagre U := mt (isMeagre_congr_residual AU).mpr hA
+  have : U.Nonempty := by exact nonempty_of_NonMeagre this
+  obtain ⟨g, hg⟩ := this
+  have h0 : U ∈ 𝓝 g := by exact IsOpen.mem_nhds hU hg
+  have h05 : g⁻¹ • g = 1 := of_eq_true
+    (Eq.trans (congrArg (fun x ↦ x = 1) (inv_mul_cancel g)) (eq_self 1))
+  have h1 : g⁻¹ • U ∈ 𝓝 1 := by
+    rwa [←inv_mul_cancel g, ←smul_eq_mul, smul_mem_nhds_smul_iff g⁻¹]
+  have : g⁻¹ • A =ᶠ[residual G] g⁻¹ • U := by
+    exact residual_smul_eventuallyEq AU
+  have : (g⁻¹ • A)⁻¹ * (g⁻¹ • A) ∈ 𝓝 1 := pettis_0 h1 this
+  simpa [Set.op_smul_set_mul_eq_mul_smul_set] using this
 
-
-variable {H: Type*} [Group H] [TopologicalSpace H] [IsTopologicalGroup H] [BaireSpace H]
+variable {H : Type*} [Group H] [TopologicalSpace H] [IsTopologicalGroup H] [BaireSpace H]
   [MeasurableSpace H] [BorelSpace H] [SecondCountableTopology H]
-
-
-
-
 
 open TopologicalSpace
 
@@ -87,16 +123,13 @@ lemma automatic_continuity {φ : G →* H} (h: Measurable φ) : Continuous φ :=
     by_contra h_contra
     simp [IsMeagre] at h_contra
 
-
-    --have : Countable ↑D := by exact hD_countable
     have : IsMeagre (⋃ h ∈ D, φ⁻¹' (h • V)) := by
       rw [IsMeagre, compl_iUnion]
-      dsimp [IsMeagre] at h_contra
       simp
       exact (countable_bInter_mem hD_countable).mpr h_contra
 
     rw [h_covers'] at this
-    have a : ¬ IsMeagre (univ : Set G) := BaireTheorem.nonMeagre_of_univ
+    have a : ¬ IsMeagre (univ : Set G) := NonMeagre_of_univ
     contradiction
 
   obtain ⟨d, hd, hnonmeagre⟩ : ∃ d ∈ D, ¬ IsMeagre (φ⁻¹' (d • V)) := h101
@@ -120,9 +153,8 @@ lemma automatic_continuity {φ : G →* H} (h: Measurable φ) : Continuous φ :=
             dsimp [A]
             exact image_preimage_subset (⇑φ) (d • V)
           refine mul_subset_mul (inv_subset_inv.mpr h234) h234
-      _ ⊆ V⁻¹ * V := by
-
-          sorry
+      _ = V⁻¹ * V := by
+          rw [inv_smul_set_distrib, Set.op_smul_set_mul_eq_mul_smul_set, inv_smul_smul]
       _ ⊆ U := by
           rw [h_V_symm]
           exact h_V_U
