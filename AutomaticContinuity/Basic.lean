@@ -24,55 +24,34 @@ lemma pettis_0 {A : Set G} {U : Set G} (hU : U ∈ 𝓝 1) (hAU : A =ᶠ[residua
     : A⁻¹ * A ∈ 𝓝 1 := by
   obtain ⟨V, h_V_mem, h_V_open, h_V_symm, h_V_U⟩ := exists_open_nhds_one_inv_eq_mul_subset hU
   refine Filter.mem_of_superset h_V_mem ?_
-
   intro v hv
+  have h_res_eq : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G) =ᶠ[residual G] ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G) :=
+    have hAU_inv : (A⁻¹ : Set G) =ᶠ[residual G] (U⁻¹ : Set G) := residual_inv hAU
+    (residual_smul_eventuallyEq hAU_inv).inter hAU_inv
+  have h_mem_nhds : (v⁻¹ • U⁻¹) ∩ U⁻¹ ∈ 𝓝 1 := by
+    refine inter_mem ?_ <| inv_mem_nhds_one G hU
+    have h42 : U⁻¹ ∈ 𝓝 v := by
+      rw [mem_nhds_iff]
+      use V
+      refine ⟨?_, h_V_open, hv⟩
 
-  have h1 : (A⁻¹ : Set G) =ᶠ[residual G] (U⁻¹ : Set G) := residual_inv hAU
-  have h2 : (v⁻¹ • A⁻¹ : Set G) =ᶠ[residual G] (v⁻¹ • U⁻¹) := by
-    exact residual_smul_eventuallyEq h1
-  have h39 : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G) =ᶠ[residual G] ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G) := by
-    exact EventuallyEq.inter h2 h1
-  have h40 : ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G).Nonempty := by
-    use 1
-    constructor
-    · simpa using h_V_U ⟨v⁻¹, by rw [←h_V_symm]; simpa, 1, mem_of_mem_nhds h_V_mem, by simp⟩
-    · simpa using h_V_U ⟨1, mem_of_mem_nhds h_V_mem, 1, mem_of_mem_nhds h_V_mem, by simp⟩
-  have h41 : U⁻¹ ∈ 𝓝 1 := by exact inv_mem_nhds_one G hU
-  have h42 : U⁻¹ ∈ 𝓝 v := by
-    rw [mem_nhds_iff]
-    use V
-    refine ⟨?_, h_V_open, hv⟩
-
-    have h43 : 1 ∈ V := by exact mem_of_mem_nhds h_V_mem
-    have h44 : V⁻¹ ⊆ U := by
-      rw [h_V_symm]
-      intro x hx
-      have hxV : x ∈ V := hx
-      have h1V : 1 ∈ V := h43
-      have hmul : x * 1 ∈ V * V := mul_mem_mul hxV h1V
-      simp at hmul
-      exact h_V_U hmul
-    exact inv_subset.mp h44
-  have h46 : v⁻¹ • U⁻¹ ∈ 𝓝 1 := by
+      have h44 : V⁻¹ ⊆ U := by
+        rw [h_V_symm]
+        intro x hx
+        have hxV : x ∈ V := hx
+        have h1V : 1 ∈ V := mem_of_mem_nhds h_V_mem
+        have hmul : x * 1 ∈ V * V := mul_mem_mul hxV h1V
+        simp at hmul
+        exact h_V_U hmul
+      exact inv_subset.mp h44
     rw [← (smul_mem_nhds_smul_iff v)]
     simpa
-  have h47 : (v⁻¹ • U⁻¹) ∩ U⁻¹ ∈ 𝓝 1 :=  by exact inter_mem h46 h41
-
-  have h48 : ¬ IsMeagre ((v⁻¹ • U⁻¹) ∩ U⁻¹ : Set G) := by
-    exact NonMeagre_of_mem_nhds h47
-
-
-  have h49 : ¬ IsMeagre ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G) := mt
-    (isMeagre_congr_residual h39).mp h48
-
-  have : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G).Nonempty := by
-    exact nonempty_of_NonMeagre h49
-
-  obtain ⟨g, hgA, hgAv⟩ := this
-
-  have ha : v • g ∈ A⁻¹ := by rwa [← mem_inv_smul_set_iff]
-  have hb : g⁻¹ ∈ A := by rwa [← Set.mem_inv]
-  have : (v * g) * g⁻¹ ∈ A⁻¹ * A := ⟨v • g, ha, g⁻¹, hb, by simp⟩
+  have h_nm : NonMeagre ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G) := mt
+    (isMeagre_congr_residual h_res_eq).mp <| nonMeagre_of_mem_nhds h_mem_nhds
+  obtain ⟨g, hgA, hgAv⟩ : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G).Nonempty :=
+    h_nm.nonempty
+  have : (v * g) * g⁻¹ ∈ A⁻¹ * A :=
+    ⟨v • g, by rwa [← mem_inv_smul_set_iff], g⁻¹, by rwa [← Set.mem_inv], by simp⟩
   simpa using this
 
 theorem pettis {A : Set G} (hBM : BaireMeasurableSet A) (hA : ¬ IsMeagre A)
