@@ -57,17 +57,14 @@ lemma pettis_0 {A : Set G} {U : Set G} (hU : U ∈ 𝓝 1) (hAU : A =ᶠ[residua
 theorem pettis {A : Set G} (hBM : BaireMeasurableSet A) (hA : ¬ IsMeagre A)
     : A⁻¹ * A ∈ nhds 1 := by
   obtain ⟨U, hU, AU⟩ := hBM.residualEq_isOpen
-  have : ¬ IsMeagre U := mt (isMeagre_congr_residual AU).mpr hA
-  have : U.Nonempty := by exact nonempty_of_NonMeagre this
-  obtain ⟨g, hg⟩ := this
-  have h0 : U ∈ 𝓝 g := by exact IsOpen.mem_nhds hU hg
-  have h05 : g⁻¹ • g = 1 := of_eq_true
-    (Eq.trans (congrArg (fun x ↦ x = 1) (inv_mul_cancel g)) (eq_self 1))
-  have h1 : g⁻¹ • U ∈ 𝓝 1 := by
+  have : NonMeagre U := mt (isMeagre_congr_residual AU).mpr hA
+  obtain ⟨g, hg⟩ : U.Nonempty := this.nonempty
+  have h_mem_nhds : g⁻¹ • U ∈ 𝓝 1 := by
+    have : U ∈ 𝓝 g := by exact IsOpen.mem_nhds hU hg
     rwa [←inv_mul_cancel g, ←smul_eq_mul, smul_mem_nhds_smul_iff g⁻¹]
-  have : g⁻¹ • A =ᶠ[residual G] g⁻¹ • U := by
+  have h_res_eq: g⁻¹ • A =ᶠ[residual G] g⁻¹ • U := by
     exact residual_smul_eventuallyEq AU
-  have : (g⁻¹ • A)⁻¹ * (g⁻¹ • A) ∈ 𝓝 1 := pettis_0 h1 this
+  have : (g⁻¹ • A)⁻¹ * (g⁻¹ • A) ∈ 𝓝 1 := pettis_0 h_mem_nhds h_res_eq
   simpa [Set.op_smul_set_mul_eq_mul_smul_set] using this
 
 variable [MeasurableSpace G] [BorelSpace G]
