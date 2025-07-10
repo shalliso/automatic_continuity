@@ -3,11 +3,9 @@ import AutomaticContinuity.Pointwise
 import AutomaticContinuity.Homeomorph
 import AutomaticContinuity.Baire
 
-open Filter Set Topology Pointwise
+open Filter Set Topology Pointwise TopologicalSpace
 variable {X : Type*} [TopologicalSpace X]
-variable {G : Type*} [Group G] [TopologicalSpace G] [IsTopologicalGroup G]
-variable [MulAction G X] [ContinuousConstSMul G X]
-variable [MeasurableSpace G] [BorelSpace G] [BaireSpace G]
+variable {G : Type*} [Group G] [MulAction G X] [ContinuousConstSMul G X]
 
 lemma residual_smul_eventuallyEq {A B : Set X} {g : G} (h : A =ᶠ[residual X] B)
     : g • A =ᶠ[residual X] g • B := by
@@ -20,7 +18,10 @@ lemma residual_smul_eventuallyEq {A B : Set X} {g : G} (h : A =ᶠ[residual X] B
   rw [←this]
   exact residual_smul g h
 
-lemma pettis_0 {A : Set G} {U : Set G} (hU : U ∈ 𝓝 1) (hAU : A =ᶠ[residual G] U) : A⁻¹ * A ∈ 𝓝 1 := by
+variable [TopologicalSpace G] [IsTopologicalGroup G] [BaireSpace G]
+
+lemma pettis_0 {A : Set G} {U : Set G} (hU : U ∈ 𝓝 1) (hAU : A =ᶠ[residual G] U)
+    : A⁻¹ * A ∈ 𝓝 1 := by
   obtain ⟨V, h_V_mem, h_V_open, h_V_symm, h_V_U⟩ := exists_open_nhds_one_inv_eq_mul_subset hU
   refine Filter.mem_of_superset h_V_mem ?_
 
@@ -90,12 +91,9 @@ theorem pettis {A : Set G} (hBM : BaireMeasurableSet A) (hA : ¬ IsMeagre A)
   have : (g⁻¹ • A)⁻¹ * (g⁻¹ • A) ∈ 𝓝 1 := pettis_0 h1 this
   simpa [Set.op_smul_set_mul_eq_mul_smul_set] using this
 
-variable {H : Type*} [Group H] [TopologicalSpace H] [IsTopologicalGroup H] [BaireSpace H]
+variable [MeasurableSpace G] [BorelSpace G]
+variable {H : Type*} [Group H] [TopologicalSpace H] [IsTopologicalGroup H]
   [MeasurableSpace H] [BorelSpace H] [SecondCountableTopology H]
-
-open TopologicalSpace
-
-variable [SeparableSpace H] [BorelSpace H]
 
 example {φ : G →* H} (h : ContinuousAt φ 1) : (Continuous φ) := continuous_of_continuousAt_one φ h
 
