@@ -74,26 +74,19 @@ variable {H : Type*} [Group H] [TopologicalSpace H] [IsTopologicalGroup H]
 example {φ : G →* H} (h : ContinuousAt φ 1) : (Continuous φ) := continuous_of_continuousAt_one φ h
 
 lemma automatic_continuity {φ : G →* H} (h: Measurable φ) : Continuous φ := by
-  -- Enough to show continuous at 1
   apply continuous_of_continuousAt_one
-
   rw [continuousAt_def, map_one]
-
   -- Fix an arbitrary neighborhood U of the 1 of H
   intro U hU
-
   -- Find symmetric neighborhood V of 1 satisfying V * V ⊆ U
   obtain ⟨V, h_V_mem, h_V_open, h_V_symm, h_V_U⟩ := exists_open_nhds_one_inv_eq_mul_subset hU
-
   -- Find a countable set D such that D • V covers H
   obtain ⟨D, hD_countable, h_covers⟩ : ∃ (D : Set H), D.Countable ∧ ⋃ d ∈ D, d • V = univ
     := TopologicalSpace.countable_cover_nhds <| fun h ↦ id (smul_mem_nhds_self.mpr h_V_mem)
-
   have h_covers' : ⋃ h ∈ D, φ⁻¹' (h • V) = univ := by
     rw [←preimage_iUnion₂, h_covers]
     rfl
-
-  have h101 : ∃ d ∈ D, ¬ IsMeagre (φ⁻¹' (d • V)) := by
+  obtain ⟨d, _, h_nonmeagre⟩ : ∃ d ∈ D, ¬ IsMeagre (φ⁻¹' (d • V)) := by
     by_contra h_contra
     simp [IsMeagre] at h_contra
 
@@ -103,40 +96,23 @@ lemma automatic_continuity {φ : G →* H} (h: Measurable φ) : Continuous φ :=
       exact (countable_bInter_mem hD_countable).mpr h_contra
 
     rw [h_covers'] at this
-    have a : ¬ IsMeagre (univ : Set G) := NonMeagre_of_univ
+    have a : NonMeagre (univ : Set G) := NonMeagre.univ
     contradiction
-
-  obtain ⟨d, hd, hnonmeagre⟩ : ∃ d ∈ D, ¬ IsMeagre (φ⁻¹' (d • V)) := h101
-
   set A := φ⁻¹' (d • V)
-  have : BaireMeasurableSet A := (h (h_V_open.smul d).measurableSet).baireMeasurableSet
-  have h4 : A⁻¹ * A ∈ nhds 1 := by exact pettis this hnonmeagre
-
-  have h234 : φ '' A ⊆ d • V := by
-    dsimp [A]
-    exact image_preimage_subset (⇑φ) (d • V)
-  have h23 : φ '' (A⁻¹ * A) ⊆ U := by
-    calc
-      φ '' (A⁻¹ * A)
-        = (φ '' A⁻¹) * (φ '' A) := by
-          exact image_mul φ
-      _ = (φ '' A)⁻¹ * (φ '' A) := by
-          exact congrFun (congrArg HMul.hMul (image_inv φ A)) (φ '' A)
-      _ ⊆ (d • V)⁻¹ * (d • V) := by
-          have : φ '' A ⊆ d • V := by
-            dsimp [A]
-            exact image_preimage_subset (⇑φ) (d • V)
-          refine mul_subset_mul (inv_subset_inv.mpr h234) h234
-      _ = V⁻¹ * V := by
-          rw [inv_smul_set_distrib, Set.op_smul_set_mul_eq_mul_smul_set, inv_smul_smul]
-      _ ⊆ U := by
-          rw [h_V_symm]
-          exact h_V_U
-
-
-  have h234 : A⁻¹ * A ⊆ φ ⁻¹' U := by
-    simpa using h23
-
-  exact mem_of_superset h4 h234
+  have h_pettis : A⁻¹ * A ∈ nhds 1 :=
+    pettis ((h (h_V_open.smul d).measurableSet).baireMeasurableSet) h_nonmeagre
+  have h_sub : A⁻¹ * A ⊆ φ ⁻¹' U :=
+    have : φ '' A ⊆ d • V := image_preimage_subset _ _
+    have : φ '' (A⁻¹ * A) ⊆ U := by
+      calc
+          φ '' (A⁻¹ * A)
+            = (φ '' A⁻¹) * (φ '' A) := image_mul _
+          _ = (φ '' A)⁻¹ * (φ '' A) := by rw [image_inv]
+          _ ⊆ (d • V)⁻¹ * (d • V) := mul_subset_mul (inv_subset_inv.mpr this) this
+          _ = V⁻¹ * V := by
+              rw [inv_smul_set_distrib, Set.op_smul_set_mul_eq_mul_smul_set, inv_smul_smul]
+          _ ⊆ U := by rw [h_V_symm]; exact h_V_U
+    image_subset_iff.mp this
+  exact mem_of_superset h_pettis h_sub
 
 #print axioms automatic_continuity
