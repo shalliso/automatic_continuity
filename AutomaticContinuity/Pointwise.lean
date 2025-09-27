@@ -3,15 +3,6 @@ import Mathlib
 open Set Topology Pointwise
 variable {X : Type*} {G : Type*} [Group G] [MulAction G X]
 
---@[to_additive]
-theorem smul_set_sInterv (a : G) (t : Set (Set X)) : (a • ⋂₀ t) = ⋂₀ (a • t) := by
-  calc
-    a • ⋂₀ t = a • (⋂ s ∈ t, s) := by simp [Set.sInter_eq_biInter]
-    _ = (fun s ↦ a • s) '' ⋂ s ∈ t, s := rfl
-    _ = ⋂ s ∈ t, (fun s ↦ a • s) '' s := by simp [Set.image_iInter (MulAction.bijective a)]
-    _ = ⋂ s ∈ (a • t), s := by exact Eq.symm biInter_image
-    _ = ⋂₀ (a • t) := by simp [Set.sInter_eq_biInter]
-
 variable [TopologicalSpace G] [IsTopologicalGroup G]
 
 -- Add this next to exists_closed_nhds_one_inv_eq_mul_subset in
