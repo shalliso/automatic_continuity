@@ -9,8 +9,8 @@ variable [TopologicalSpace G] [IsTopologicalGroup G]
 -- Topology/Algebra/Group/Pointwise.lean
 /-- Given a neighborhood `U` of the identity, one may find a neighborhood `V` of the identity which
 is open, symmetric, and satisfies `V * V ⊆ U`. -/
-@[to_additive "Given a neighborhood `U` of the identity, one may find a neighborhood `V` of the
-identity which is open, symmetric, and satisfies `V + V ⊆ U`."]
+@[to_additive /-- Given a neighborhood `U` of the identity, one may find a neighborhood `V` of the
+identity which is open, symmetric, and satisfies `V + V ⊆ U`. --/]
 theorem exists_open_nhds_one_inv_eq_mul_subset {U : Set G} (hU : U ∈ 𝓝 1) :
     ∃ V ∈ 𝓝 1, IsOpen V ∧ V⁻¹ = V ∧ V * V ⊆ U := by
   rcases exists_open_nhds_one_mul_subset hU with ⟨V, V_open, V_one, hV⟩

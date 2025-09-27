@@ -28,11 +28,6 @@ lemma isMeagre_iUnion' [Countable ι] {f : ι → Set X} (hs : ∀ i, IsMeagre (
 
 theorem mem_residual_of_univ : univ ∈ residual X := univ_mem
 
-/-- A union of two meagre sets is meagre. -/
-lemma IsMeagre.union (hs : IsMeagre s) (ht : IsMeagre t) : IsMeagre (s ∪ t) := by
-  rw [IsMeagre, compl_union]
-  exact inter_mem hs ht
-
 lemma isMeagre_congr_residual {s t : Set X} (h : s =ᶠ[residual X] t) : IsMeagre s ↔ IsMeagre t := by
   dsimp [EventuallyEq, Filter.Eventually] at h
   set A := {x | s x = t x}
@@ -60,7 +55,7 @@ lemma BaireMeasurableSet.nonMeagre_residualEq_isOpen_Nonempty (hBM : BaireMeasur
   refine ⟨u, h_open, ?_, h_su⟩
   · by_contra hu
     push_neg at hu
-    have : IsMeagre s := by exact (isMeagre_congr_residual h_su).mpr <| hu.symm ▸ meagre_empty
+    have : IsMeagre s := by exact (isMeagre_congr_residual h_su).mpr <| hu.symm ▸ IsMeagre.empty
     contradiction
 
 theorem NonMeagre.univ [Nonempty X] [BaireSpace X] : NonMeagre (univ : Set X) := by
@@ -74,7 +69,7 @@ theorem NonMeagre.nonempty [Nonempty X] {s : Set X} (hs : NonMeagre s)
   by_contra h
   have : s = ∅ := by exact Set.not_nonempty_iff_eq_empty.mp h
   rw [this] at hs
-  have : IsMeagre (∅ : Set X) := by exact meagre_empty
+  have : IsMeagre (∅ : Set X) := by exact IsMeagre.empty
   contradiction
 
 theorem IsOpen.nonMeagre_of_Nonempty [BaireSpace X] (h_open : IsOpen s) (h_ne : s.Nonempty)
