@@ -125,12 +125,42 @@ lemma star_smul_iff : g • x ∈ A^{*U} ↔ x ∈ A^{*U • g} := by
     dsimp
     dsimp at hgxA
     dsimp [Filter.Eventually] at hgxA ⊢
-    apply residual_smul g at hgxA
-    have : {x_1 | x_1 ∈ U → x_1 • g • x ∈ A} • g = {x_1 | x_1 ∈ U → x_1 • g • x ∈ A} := by
+    have : {a | a ∈ U → a • g • x ∈ A} • g = {a | a ∈ U • g → a • x ∈ A}:= by
       ext a
-      simp [HSMul.hSMul, SMul.smul]
-      sorry
-    sorry
+      constructor
+      · simp [HSMul.hSMul, SMul.smul]
+        rw [SMul.smul_eq_hSMul]
+        intro b h1 h2 c hc hd
+        have hb1 : b = a * g⁻¹ := by exact eq_mul_inv_of_mul_eq h2
+        have hc1 : c = a * g⁻¹ := by exact eq_mul_inv_of_mul_eq hd
+        rw [←hc1] at hb1
+        rw [←hb1] at hc
+        apply h1 at hc
+        rw [←hb1] at hc1
+        rw [hc1] at hc
+        have : (a * g⁻¹) • (g • x) = ((a * g⁻¹) * g) • x := by
+          rw [smul_smul]
+        rw [this] at hc
+        simp at hc
+        assumption
+      · simp [HSMul.hSMul, SMul.smul]
+        rw [SMul.smul_eq_hSMul]
+        intro h
+        use a * g⁻¹
+        simp
+        intro h2
+        specialize h (a * g⁻¹)
+        simp at h
+        apply h at h2
+        have : (a * g⁻¹) • (g • x) = ((a * g⁻¹) * g) • x := by
+          rw [smul_smul]
+        rw [this]
+        simp
+        exact h2
+    rw [←this]
+
+    rw [←this] at hgxA
+    exact hgxA
   · sorry
 
 lemma delta_smul_iff : g • x ∈ A^{ΔU} ↔ x ∈ A^{ΔU • g} := by
