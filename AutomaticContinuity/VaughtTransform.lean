@@ -2,8 +2,6 @@ import Mathlib
 import AutomaticContinuity.Baire
 import AutomaticContinuity.Homeomorph
 
-noncomputable section
-
 open Set Filter Topology TopologicalSpace
 open scoped Pointwise
 
@@ -83,6 +81,10 @@ lemma star_union : A^{* U ∪ V} = A^{*U} ∩ A^{*V} := by
 
 lemma star_compl : (Aᶜ)^{*U} = (A^{ΔU})ᶜ := by
   ext x
+  simp
+
+lemma star_compl2 : A^{*U} = ((Aᶜ)^{ΔU})ᶜ := by
+  rw [←star_compl]
   simp
 
 @[simp]
@@ -179,6 +181,9 @@ lemma delta_lem1 (hVU : V ⊆ U) (hVxA : V • x ⊆ A) : x ∈ A^{*V} := by
     use a
   exact hVxA this
 
+lemma delta_lem12 : A^{*V} ⊆ A^{ΔV} := by
+  sorry
+
 lemma delta_lem2 (hU2 : IsOpen U) : x ∈ A^{ΔU} → ∃ u ∈ U, u • x ∈ A := by
   intro hx
   dsimp at hx
@@ -204,8 +209,17 @@ lemma delta_open_open (hA : IsOpen A) (hU : IsOpen U) : IsOpen (A^{Δ U}) := by
   refine ⟨B, ?_, hB, hxB⟩
 
   intro y hy
+  let V2 := U ∩ V
+  have hV2 : V2 ⊆ U := by exact inter_subset_left
+  have hVyA : V2 • y ⊆ A := by sorry
+  exact delta_lem1
+
   sorry
 
-
+lemma star_closed_closed (hA : IsClosed A) (hU : IsOpen U) : IsClosed (A^{* U}) := by
+  rw [star_compl2]
+  refine isClosed_compl_iff.mpr ?_
+  have : IsOpen Aᶜ := by exact IsClosed.isOpen_compl
+  exact delta_open_open this hU
 
 end VaughtTransform
