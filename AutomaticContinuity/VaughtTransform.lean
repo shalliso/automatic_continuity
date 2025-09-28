@@ -1,29 +1,6 @@
 import Mathlib
 import AutomaticContinuity.Baire
-
-/-!
-# Vaught Transform
-
-This file defines the Vaught transform in the context of continuous actions of Polish groups
-on Polish spaces, following the classical definition from descriptive set theory.
-
-## Main definitions
-
-* `VaughtTransformStar`: The A^{*U} transform using comeager sets
-* `VaughtTransformDelta`: The A^{ΔU} transform using nonmeager sets
-
-## Main results
-
-* Basic properties of both transforms including monotonicity and measurability preservation
-* Relationship between the two transforms
-* Behavior under composition and intersection
-
-## References
-
-* Vaught, R. L. "Invariant sets in topology and logic"
-* Kechris, A. S. "Classical Descriptive Set Theory"
-* Becker, H. and Kechris, A. S. "The Descriptive Set Theory of Polish Group Actions"
--/
+import AutomaticContinuity.Homeomorph
 
 noncomputable section
 
@@ -44,9 +21,9 @@ abbrev VaughtTransformStar (A : Set X) (U : Set G) : Set X :=
 abbrev VaughtTransformDelta (A : Set X) (U : Set G) : Set X :=
   {x : X | ∃ᵇ (g : G), g ∈ U ∧ g • x ∈ A}
 
--- Notation for the transforms
-notation:70 A "^{*" U "}" => VaughtTransformStar A U
-notation:70 A "^{Δ" U "}" => VaughtTransformDelta A U
+-- Did I choose right values here?
+notation:75 A "^{*" U "}" => VaughtTransformStar A U
+notation:75 A "^{Δ" U "}" => VaughtTransformDelta A U
 
 namespace VaughtTransform
 
@@ -65,22 +42,38 @@ lemma star_monotonic2 (h : U ⊆ V) : A^{*V} ⊆ A^{*U} := by
   filter_upwards [hx] with g hgV_to_gxA hgU
   exact hgV_to_gxA (h hgU)
 
-lemma star_inter : (A ∩ B)^{*U} = A^{*U} ∩ B^{*U} :=
-  by sorry
+lemma star_inter : (A ∩ B)^{*U} = A^{*U} ∩ B^{*U} := by
+  ext x
+  constructor
+  · intro hx
+    constructor
+    · have : A ∩ B ⊆ A := by exact inter_subset_left
+      have : (A ∩ B)^{*U} ⊆ A^{*U} := by exact star_monotonic this
+      exact this hx
+    · have : A ∩ B ⊆ B := by exact inter_subset_right
+      have : (A ∩ B)^{*U} ⊆ B^{*U} := by exact star_monotonic this
+      exact this hx
+  · intro ⟨hxA, hxB⟩
+    dsimp
+    filter_upwards [hxA, hxB] with g gUA gUB
+    exact fun a ↦ mem_inter (gUA a) (gUB a)
 
+-- needs to be a countable intersection
 lemma star_iInter {ι : Type*} (s : ι → Set X) : (⋂ i, s i)^{*U} = ⋂ i, (s i)^{*U} := by
-  sorry
-
-lemma star_sInter {s : Set (Set X)} : (⋂₀ s)^{*U} = ⋂₀ {A^{*U} | A ∈ s} := by
-  sorry
+  ext x
+  constructor
+  · intro hx
+    refine mem_iInter.mpr ?_
+    intro i
+    have : ⋂ i, s i ⊆ s i := by exact iInter_subset_of_subset i fun ⦃a⦄ a ↦ a
+    have : (⋂ i, s i)^{*U} ⊆ (s i)^{*U} := by exact star_monotonic this
+    exact this hx
+  · intro hx
+    dsimp
+    apply mem_iInter.mp at hx
+    sorry
 
 lemma star_union : A^{* U ∪ V} = A^{*U} ∩ A^{*V} := by
-  sorry
-
-lemma star_iUnion {ι : Type*} (s : ι → Set G) : A^{* ⋃ i, s i} = ⋂ i, (A)^{* s i} := by
-  sorry
-
-lemma star_sUnion {s : Set (Set G)} : A^{* ⋃₀ s} = ⋂₀ {A^{*U} | U ∈ s} := by
   sorry
 
 lemma star_compl : (Aᶜ)^{*U} = (A^{ΔU})ᶜ := by
@@ -127,7 +120,18 @@ lemma star_subset_delta [BaireSpace G] : A^{*U} ⊆ A^{ΔU} := by
   sorry
 
 lemma star_smul_iff : g • x ∈ A^{*U} ↔ x ∈ A^{*U • g} := by
-  sorry
+  constructor
+  · intro hgxA
+    dsimp
+    dsimp at hgxA
+    dsimp [Filter.Eventually] at hgxA ⊢
+    apply residual_smul g at hgxA
+    have : {x_1 | x_1 ∈ U → x_1 • g • x ∈ A} • g = {x_1 | x_1 ∈ U → x_1 • g • x ∈ A} := by
+      ext a
+      simp [HSMul.hSMul, SMul.smul]
+      sorry
+    sorry
+  · sorry
 
 lemma delta_smul_iff : g • x ∈ A^{ΔU} ↔ x ∈ A^{ΔU • g} := by
   sorry
