@@ -9,11 +9,16 @@ open scoped Pointwise
 
 variable {X : Type*} [TopologicalSpace X] [PolishSpace X]
 variable {G : Type*} [TopologicalSpace G] [PolishSpace G] [Group G] [IsTopologicalGroup G]
-variable [MulAction G X] [ContinuousConstSMul G X]
+variable [MulAction G X] [ContinuousSMul G X]
 
--- Right action of G on Set G
 instance : HSMul (Set G) G (Set G) where
   hSMul U g := {u • g | u ∈ U}
+
+instance : HSMul (Set G) X (Set X) where
+  hSMul U x := {u • x | u ∈ U}
+
+instance : HSMul (Set G) (Set X) (Set X) where
+  hSMul U A := image2 (· • ·) U A
 
 abbrev VaughtTransformStar (A : Set X) (U : Set G) : Set X :=
   {x : X | ∀ᵇ (g : G), g ∈ U → g • x ∈ A}
@@ -158,12 +163,49 @@ lemma star_smul_iff : g • x ∈ A^{*U} ↔ x ∈ A^{*U • g} := by
         simp
         exact h2
     rw [←this]
-
-    rw [←this] at hgxA
-    exact hgxA
+    sorry
+    --rw [←this] at hgxA
+    --exact hgxA
   · sorry
 
 lemma delta_smul_iff : g • x ∈ A^{ΔU} ↔ x ∈ A^{ΔU • g} := by
   sorry
+
+lemma delta_lem1 (hVU : V ⊆ U) (hVxA : V • x ⊆ A) : x ∈ A^{*V} := by
+  dsimp
+  filter_upwards
+  intro a ha
+  have : a • x ∈ V • x := by
+    use a
+  exact hVxA this
+
+lemma delta_lem2 (hU2 : IsOpen U) : x ∈ A^{ΔU} → ∃ u ∈ U, u • x ∈ A := by
+  intro hx
+  dsimp at hx
+  exact Frequently.exists hx
+
+lemma delta_open_open (hA : IsOpen A) (hU : IsOpen U) : IsOpen (A^{Δ U}) := by
+  refine isOpen_iff_forall_mem_open.mpr ?_
+  intro x hx
+  have ⟨u, huU, huxA⟩ : ∃ u ∈ U, u • x ∈ A := by exact delta_lem2 hU hx
+  let f : G × X → X := fun (⟨g, x⟩ : G × X) ↦ (g • x : X)
+  have : Continuous f := by
+    exact continuous_smul
+  let Z := f ⁻¹' A
+  have h4: IsOpen Z := by
+    exact this.isOpen_preimage A hA
+
+  have h5: ⟨u, x⟩ ∈ Z := by sorry
+
+  have ⟨V, B, hV, hB, huV, hxB, VBZ⟩
+    : ∃ (V : Set G) (B : Set X), IsOpen V ∧ IsOpen B ∧ u ∈ V ∧ x ∈ B ∧ V ×ˢ B ⊆ Z := by
+    exact isOpen_prod_iff.mp h4 u x h5
+
+  refine ⟨B, ?_, hB, hxB⟩
+
+  intro y hy
+  sorry
+
+
 
 end VaughtTransform
