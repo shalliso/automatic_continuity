@@ -5,8 +5,9 @@ import AutomaticContinuity.Homeomorph
 open Set Filter Topology TopologicalSpace
 open scoped Pointwise
 
-variable {X : Type*} [TopologicalSpace X] [PolishSpace X]
+variable {X : Type*} [TopologicalSpace X] [PolishSpace X] [MeasurableSpace X] [BorelSpace X]
 variable {G : Type*} [TopologicalSpace G] [PolishSpace G] [Group G] [IsTopologicalGroup G]
+variable [MeasurableSpace G] [BorelSpace G]
 variable [MulAction G X] [ContinuousSMul G X]
 
 instance : HSMul (Set G) G (Set G) where
@@ -98,6 +99,69 @@ lemma star_univ (hU_open : IsOpen U) (hU_nonempty : U.Nonempty) : (univ : Set X)
 
 lemma delta_compl : A^{ΔU} = ((Aᶜ)^{*U})ᶜ := by sorry
 
+lemma delta_iff_star (hA : MeasurableSet A) (hUopen : IsOpen U) (hUne : U.Nonempty)
+  (x : X)
+  : x ∈ A^{Δ U} ↔ ∃ V ⊆ U, (IsOpen V) ∧ (V.Nonempty) ∧ x ∈ A^{*V} := by
+  constructor
+  · intro hx
+    dsimp at hx
+    let f : G → X := (· • x)
+    have hf : Measurable f := by
+      exact MeasurableSMul.measurable_smul_const x
+    have h5 : MeasurableSet ((f⁻¹' A) : Set G) := by
+      exact MeasurableSet.preimage hA hf
+    let S := {g : G | g ∈ U ∧ g • x ∈ A}
+    have h6 : MeasurableSet U := by
+      exact IsOpen.measurableSet hUopen
+    have : MeasurableSet S := by
+      exact MeasurableSet.inter h6 h5
+    have : BaireMeasurableSet S := by exact MeasurableSet.baireMeasurableSet this
+    have h2 : ¬ IsMeagre S := by
+      exact hx
+    have h3 := BaireMeasurableSet.nonMeagre_residualEq_isOpen_Nonempty this h2
+    obtain ⟨V, hVopen, hVne, hVS⟩ := h3
+    have hSVne : (S ∩ V).Nonempty := by
+      have : ∀ᵇ (g : G), g ∈ S ↔ g ∈ V := by
+        exact EventuallyEq.mem_iff hVS
+      have : ∃ᵇ (g : G), (g ∈ U ∧ g • x ∈ A) ∧ (g ∈ S ↔ g ∈ V) := by
+        exact Frequently.and_eventually hx this
+      simp at this
+      have : ∃ g : G, ((g ∈ U ∧ g • x ∈ A) ∧ (g ∈ S ↔ g ∈ V)) := by
+        exact Frequently.exists this
+      obtain ⟨g, ⟨hgU, hgxA⟩, hgSV⟩ := this
+      have h8 : g ∈ S := by exact mem_sep hgU hgxA
+      have h9 : g ∈ V := by exact hgSV.mp h8
+      exact ⟨g, h8, h9⟩
+
+    let W := U ∩ V
+    refine ⟨W, ?_, ?_, ?_, ?_⟩
+    · exact inter_subset_left
+    · exact IsOpen.inter hUopen hVopen
+    · obtain ⟨g1, ⟨hg1, hg11⟩, hg2⟩ := hSVne
+      use g1
+      exact mem_inter hg1 hg2
+    · dsimp
+      dsimp [EventuallyEq] at hVS
+      filter_upwards [hVS]
+      intro a hSaVa haW
+      have : a ∈ V := by exact mem_of_mem_inter_right haW
+      have : a ∈ S := by
+        have : V a := by exact this
+        have : S a := by
+          rwa [←hSaVa] at this
+        exact this
+      exact this.2
+  · intro ⟨V, hV, hVopen, hVne, hxAV⟩
+    dsimp at hxAV
+    --have : ∃ᵇ (g : G), g ∈ V := by
+    --  exact residual_frequently_nonempty_open V hVopen hVne
+    --have : ∃ᵇ (g : G), g ∈ V ∧ (g ∈ V → g • x ∈ A) := by
+    --  exact Frequently.and_eventually this hxAV
+
+
+
+    sorry
+
 lemma delta_monotonic (h : A ⊆ B) : A^{ΔU} ⊆ B^{ΔU} := by
   rw [delta_compl, delta_compl]
   intro x hx
@@ -181,7 +245,14 @@ lemma delta_lem1 (hVU : V ⊆ U) (hVxA : V • x ⊆ A) : x ∈ A^{*V} := by
     use a
   exact hVxA this
 
-lemma delta_lem12 : A^{*V} ⊆ A^{ΔV} := by
+lemma delta_lem12 (hV : V.Nonempty) :  A^{*V} ⊆ A^{ΔV} := by
+  intro x hx
+  dsimp at hx ⊢
+  have : ∃ᵇ (g : G), g ∈ V := by sorry
+  have : ∃ᵇ (g : G), (g ∈ V) ∧ (g ∈ V → g • x ∈ A) := by
+    exact Frequently.and_eventually this hx
+  simp at this
+
   sorry
 
 lemma delta_lem2 (hU2 : IsOpen U) : x ∈ A^{ΔU} → ∃ u ∈ U, u • x ∈ A := by

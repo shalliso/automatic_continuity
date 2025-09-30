@@ -10,6 +10,15 @@ variable {s t : Set X}
 
 variable [TopologicalSpace X]
 
+lemma residual_frequently_nonempty_open [BaireSpace X] (S : Set X) (hSopen : IsOpen S) (hSne : S.Nonempty)
+  : ∃ᵇ (x : X), x ∈ S := by
+  by_contra h_meagre
+  simp at h_meagre
+  have : Sᶜ ∈ residual X := by exact h_meagre
+  have : Dense Sᶜ := dense_of_mem_residual this
+  have : (S ∩ Sᶜ).Nonempty := Dense.inter_open_nonempty this S hSopen hSne
+  simp at this
+
 /-- A residual set is nonempty.
     Put this in Topology/Baire/Lemmas.lean
 -/
@@ -47,7 +56,7 @@ lemma isMeagre_congr_residual {s t : Set X} (h : s =ᶠ[residual X] t) : IsMeagr
 
 section NonMeagre
 -- A non meagre set is a set that is not meagre
-def NonMeagre (A : Set X) : Prop := ¬ IsMeagre A
+abbrev NonMeagre (A : Set X) : Prop := ¬ IsMeagre A
 
 lemma BaireMeasurableSet.nonMeagre_residualEq_isOpen_Nonempty (hBM : BaireMeasurableSet s)
     (hNM : NonMeagre s) : ∃ u : Set X, (IsOpen u) ∧ u.Nonempty ∧ s =ᵇ u := by

@@ -108,7 +108,22 @@ lemma cbDerivativeOrd_subset (A : Set X) (α : Ordinal) : cbDerivativeOrd A α �
     exact iInter_subset_of_subset ⟨γ, hγ⟩ (hβ2 γ hγ)
 
 lemma cbDerivativeOrd_antitone (A : Set X) : Antitone (cbDerivativeOrd A) := by
-  sorry
+  dsimp [Antitone]
+  intro α β hαβ
+  induction β using Ordinal.limitRecOn with
+  | zero =>
+    rw [Ordinal.le_zero.mp hαβ]
+  | succ γ hγ =>
+    rcases (Order.le_succ_iff_eq_or_le.mp hαβ) with heq | hle
+    · rw [heq]
+    · rw [cbDerivativeOrd_succ]
+      exact Set.Subset.trans (cbDerivative_subset _) (hγ hle)
+  | limit γ hγ hγ2 =>
+    have : α = γ ∨ α < γ := by exact Or.symm (lt_or_eq_of_le hαβ)
+    rcases this with heq | hgt
+    · rw [heq]
+    · rw [cbDerivativeOrd_limit A hγ]
+      refine iInter_subset_of_subset ⟨α, hgt⟩ (by rfl)
 
 def cbKernel (A : Set X) : Set X :=
   ⋂ α : Ordinal.{0}, cbDerivativeOrd A α
@@ -119,6 +134,17 @@ lemma cbKernel_isPerfect (A : Set X) : Perfect (cbKernel A) := by
 lemma cbDerivativeOrd_eventually_eq_kernel (A : Set X) :
     ∃ α : Ordinal, ∀ β ≥ α, cbDerivativeOrd A β = cbKernel A := by
   sorry
+
+def stabilizingOrds (A : Set X) : Set Ordinal :=
+  {α | cbDerivativeOrd A α = cbDerivativeOrd A (Order.succ α)}
+
+theorem stabilizingOrds_nonempty (A : Set X) : (stabilizingOrds A).Nonempty := by
+  sorry
+
+noncomputable def cbRank (A : Set X) : Ordinal :=
+  sInf (stabilizingOrds A)
+
+
 
 end CBDerivative
 
