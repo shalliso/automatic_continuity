@@ -62,8 +62,7 @@ lemma star_inter : (A ∩ B)^{*U} = A^{*U} ∩ B^{*U} := by
     filter_upwards [hxA, hxB] with g gUA gUB
     exact fun a ↦ mem_inter (gUA a) (gUB a)
 
--- needs to be a countable intersection
-lemma star_iInter {ι : Type*} (s : ι → Set X) : (⋂ i, s i)^{*U} = ⋂ i, (s i)^{*U} := by
+lemma star_iInter {ι : Type*} (hι : Countable ι) (s : ι → Set X) : (⋂ i, s i)^{*U} = ⋂ i, (s i)^{*U} := by
   ext x
   constructor
   · intro hx
@@ -75,10 +74,14 @@ lemma star_iInter {ι : Type*} (s : ι → Set X) : (⋂ i, s i)^{*U} = ⋂ i, (
   · intro hx
     dsimp
     apply mem_iInter.mp at hx
-    sorry
-
-lemma star_union : A^{* U ∪ V} = A^{*U} ∩ A^{*V} := by
-  sorry
+    dsimp at hx
+    have : ∀ᵇ (g : G), ∀ (i : ι), g ∈ U → g • x ∈ s i := by
+      exact eventually_countable_forall.mpr hx
+    filter_upwards [this]
+    intro a hUs haU
+    have : ∀ (i : ι), a • x ∈ s i := by
+      exact fun i ↦ hUs i haU
+    exact mem_iInter.mpr this
 
 lemma star_compl : (Aᶜ)^{*U} = (A^{ΔU})ᶜ := by
   ext x
@@ -89,19 +92,41 @@ lemma star_compl2 : A^{*U} = ((Aᶜ)^{ΔU})ᶜ := by
   simp
 
 @[simp]
-lemma star_empty (hU_open : IsOpen U) (hU_nonempty : U.Nonempty) : (∅ : Set X)^{*U} = ∅ := by
+lemma star_empty [BaireSpace G] [Nonempty G] (hU_open : IsOpen U) (hU_nonempty : U.Nonempty) : (∅ : Set X)^{*U} = ∅ := by
+  ext x
+  simp only [mem_setOf_eq, mem_empty_iff_false, imp_false, iff_false, not_eventually, not_not]
+  exact residual_frequently_nonempty_open U hU_open hU_nonempty
+
+@[simp]
+lemma star_univ : (univ : Set X)^{*U} = univ := by
   ext x
   simp
-  sorry
 
-lemma star_univ (hU_open : IsOpen U) (hU_nonempty : U.Nonempty) : (univ : Set X)^{*U} = univ := by
-  sorry
+lemma delta_compl : A^{ΔU} = ((Aᶜ)^{*U})ᶜ := by
+  ext x
+  constructor
+  · intro h
+    simp at h ⊢
+    assumption
+  · intro h
+    simp at h ⊢
+    assumption
 
-lemma delta_compl : A^{ΔU} = ((Aᶜ)^{*U})ᶜ := by sorry
+lemma delta_monotonic (h : A ⊆ B) : A^{ΔU} ⊆ B^{ΔU} := by
+  intro x hx
+  have : ∀ g : G, (g ∈ U ∧ g • x ∈ A) → (g ∈ U ∧ g • x ∈ B) := by
+    exact fun g ⟨hg, hg2⟩ ↦ ⟨hg, h hg2⟩
+  exact Frequently.mono hx this
 
-lemma delta_iff_star (hA : MeasurableSet A) (hUopen : IsOpen U) (hUne : U.Nonempty)
+lemma delta_monotonic2 (h : U ⊆ V) : A^{ΔU} ⊆ A^{ΔV} := by
+  intro x hx
+  have : ∀ g : G, (g ∈ U ∧ g • x ∈ A) → (g ∈ V ∧ g • x ∈ A) := by
+    exact fun g ⟨hg, hg2⟩ ↦ ⟨h hg, hg2⟩
+  exact Frequently.mono hx this
+
+lemma delta_iff_star [BaireSpace G] [Nonempty G] (hA : MeasurableSet A) (hUopen : IsOpen U) (hUne : U.Nonempty)
   (x : X)
-  : x ∈ A^{Δ U} ↔ ∃ V ⊆ U, (IsOpen V) ∧ (V.Nonempty) ∧ x ∈ A^{*V} := by
+  : x ∈ A^{ΔU} ↔ ∃ V ⊆ U, IsOpen V ∧ V.Nonempty ∧ x ∈ A^{*V} := by
   constructor
   · intro hx
     dsimp at hx
@@ -153,42 +178,61 @@ lemma delta_iff_star (hA : MeasurableSet A) (hUopen : IsOpen U) (hUne : U.Nonemp
       exact this.2
   · intro ⟨V, hV, hVopen, hVne, hxAV⟩
     dsimp at hxAV
-    --have : ∃ᵇ (g : G), g ∈ V := by
-    --  exact residual_frequently_nonempty_open V hVopen hVne
-    --have : ∃ᵇ (g : G), g ∈ V ∧ (g ∈ V → g • x ∈ A) := by
-    --  exact Frequently.and_eventually this hxAV
-
-
-
-    sorry
-
-lemma delta_monotonic (h : A ⊆ B) : A^{ΔU} ⊆ B^{ΔU} := by
-  rw [delta_compl, delta_compl]
-  intro x hx
-  by_contra hxB
-
-  simp at hx ⊢
-
-  sorry
-
-lemma delta_monotonic2 (h : U ⊆ V) : A^{ΔV} ⊆ A^{ΔU} := by
-  sorry
-
-lemma delta_union : (A ∪ B)^{ΔU} = A^{ΔU} ∪ B^{ΔU} :=
-  by sorry
-
-lemma delta_iUnion {ι : Type*} (s : ι → Set X) : (⋃ i, s i)^{ΔU} = ⋃ i, (s i)^{ΔU} := by
-  sorry
-
-lemma delta_sUnion {s : Set (Set X)} : (⋃₀ s)^{*U} = ⋃₀ {A^{ΔU} | A ∈ s} := by
-  sorry
+    have h5 : ∃ᵇ (g : G), g ∈ V := by
+      exact residual_frequently_nonempty_open V hVopen hVne
+    have h6 : ∃ᵇ (g : G), g ∈ V ∧ (g ∈ V → g • x ∈ A) := by
+      exact Frequently.and_eventually h5 hxAV
+    have h7 : ∀ (g : G), (g ∈ V ∧ (g ∈ V → g • x ∈ A)) → (g ∈ V ∧ g • x ∈ A) := by
+      intro g hg
+      exact ⟨hg.1, hg.2 hg.1⟩
+    have : ∃ᵇ (g : G), g ∈ V ∧ g • x ∈ A := by
+      exact Frequently.mono h6 h7
+    have h4 : x ∈ A^{Δ V} := by exact this
+    have : A^{Δ V} ⊆ A^{Δ U} := by exact delta_monotonic2 hV
+    exact this h4
 
 lemma delta_compl2 : (Aᶜ)^{ΔU} = (A^{*U})ᶜ := by
   ext x
   simp
 
-lemma star_subset_delta [BaireSpace G] : A^{*U} ⊆ A^{ΔU} := by
+lemma star_subset_delta [BaireSpace G] (hUopen : IsOpen U) (hUne : U.Nonempty) : A^{*U} ⊆ A^{ΔU} := by
+  intro x h
+  dsimp at h ⊢
+  have h1 : ∃ᵇ (g : G), g ∈ U := by
+    exact residual_frequently_nonempty_open U hUopen hUne
+  have h2 : ∃ᵇ (g : G), g ∈ U ∧ (g ∈ U → g • x ∈ A) := by
+    exact Frequently.and_eventually h1 h
+  have h3 : ∀ (g : G), (g ∈ U ∧ (g ∈ U → g • x ∈ A)) → (g ∈ U ∧ g • x ∈ A) := by
+    intro g hg
+    simp at hg ⊢
+    exact ⟨hg.1, hg.2 hg.1⟩
+  exact Frequently.mono h2 h3
+
+lemma delta_union : (A ∪ B)^{ΔU} = A^{ΔU} ∪ B^{ΔU} := by
+  ext x
+  constructor
+  · intro hx
+    simp at hx ⊢
+    have : ∀ (g : G), (g ∈ U ∧ (g • x ∈ A ∨ g • x ∈ B))
+      → ((g ∈ U ∧ g • x ∈ A) ∨ (g ∈ U ∧ g • x ∈ B)) := by
+      intro g hg
+      exact and_or_left.mp hg
+    have : ∃ᵇ (g : G), (g ∈ U ∧ g • x ∈ A) ∨ (g ∈ U ∧ g • x ∈ B) := by
+      exact Frequently.mono hx this
+    exact frequently_or_distrib.mp this
+  · have hA2 : A ⊆ A ∪ B := by exact subset_union_left
+    have hB2 : B ⊆ A ∪ B := by exact subset_union_right
+    have hA : A^{ΔU} ⊆ (A ∪ B)^{ΔU} := by
+      exact delta_monotonic hA2
+    have hB : B^{ΔU} ⊆ (A ∪ B)^{ΔU} := by
+      exact delta_monotonic hB2
+    have : A^{ΔU} ∪ B^{ΔU} ⊆ (A ∪ B)^{ΔU} := by exact union_subset hA hB
+    exact fun a ↦ this a
+
+lemma delta_iUnion {ι : Type*} (s : ι → Set X) : (⋃ i, s i)^{ΔU} = ⋃ i, (s i)^{ΔU} := by
   sorry
+
+
 
 lemma star_smul_iff : g • x ∈ A^{*U} ↔ x ∈ A^{*U • g} := by
   constructor
