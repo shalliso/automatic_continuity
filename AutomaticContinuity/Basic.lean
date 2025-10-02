@@ -72,36 +72,35 @@ variable [MeasurableSpace G] [BorelSpace G]
 variable {H : Type*} [Group H] [TopologicalSpace H] [IsTopologicalGroup H]
   [MeasurableSpace H] [BorelSpace H] [SecondCountableTopology H]
 
-example {φ : G →* H} (h : ContinuousAt φ 1) : (Continuous φ) := continuous_of_continuousAt_one φ h
-
-lemma automatic_continuity {φ : G →* H} (h: Measurable φ) : Continuous φ := by
+lemma automatic_continuity {φ : G →* H} (h : Measurable φ) : Continuous φ := by
   apply continuous_of_continuousAt_one
   rw [continuousAt_def, map_one]
-  -- Fix an arbitrary neighborhood U of the 1 of H
+  -- Fix an arbitrary neighborhood `U` of the identity of `H`
   intro U hU
-  -- Find symmetric neighborhood V of 1 satisfying V * V ⊆ U
+  -- Find symmetric neighborhood `V` of 1 satisfying `V * V ⊆ U`
   obtain ⟨V, h_V_mem, h_V_open, h_V_symm, h_V_U⟩ := exists_open_nhds_one_inv_eq_mul_subset hU
-  -- Find a countable set D such that D • V covers H
-  obtain ⟨D, hD_countable, h_covers⟩ : ∃ (D : Set H), D.Countable ∧ ⋃ d ∈ D, d • V = univ
-    := TopologicalSpace.countable_cover_nhds <| fun h ↦ id (smul_mem_nhds_self.mpr h_V_mem)
-  have h_covers' : ⋃ h ∈ D, φ⁻¹' (h • V) = univ := by
+  -- Find a countable set `D` such that `D • V` covers `H`
+  obtain ⟨D, hD_countable, h_covers⟩ : ∃ (D : Set H), D.Countable ∧ ⋃ d ∈ D, d • V = univ :=
+    TopologicalSpace.countable_cover_nhds <| fun h ↦ id (smul_mem_nhds_self.mpr h_V_mem)
+  -- The preimages `φ ⁻¹' (d • V)` cover `G`
+  have h_covers : ⋃ d ∈ D, φ⁻¹' (d • V) = univ := by
     rw [←preimage_iUnion₂, h_covers]
     rfl
+  -- Fix some `d` for which `φ ⁻¹' (d • V)` is non-meagre
   obtain ⟨d, _, h_IsNonMeagre⟩ : ∃ d ∈ D, ¬ IsMeagre (φ⁻¹' (d • V)) := by
-    by_contra h_contra
-    simp [IsMeagre] at h_contra
-
-    have : IsMeagre (⋃ h ∈ D, φ⁻¹' (h • V)) := by
-      rw [IsMeagre, compl_iUnion]
-      simp
-      exact (countable_bInter_mem hD_countable).mpr h_contra
-
-    rw [h_covers'] at this
-    have a : IsNonMeagre (univ : Set G) := IsNonMeagre.univ
-    contradiction
+    have : IsNonMeagre (univ : Set G) := IsNonMeagre.univ
+    contrapose! this
+    have : IsMeagre (univ : Set G) := by
+      rw [← h_covers, IsMeagre]
+      simp only [compl_iUnion]
+      exact (countable_bInter_mem hD_countable).mpr this
+    exact this
+  -- Set `A` to be this set
   set A := φ⁻¹' (d • V)
+  -- `A^{-1} * A` is a neighborhood of 1
   have h_pettis : A⁻¹ * A ∈ nhds 1 :=
     pettis ((h (h_V_open.smul d).measurableSet).baireMeasurableSet) h_IsNonMeagre
+  -- and it is contained in the preimage of `U` as desired
   have h_sub : A⁻¹ * A ⊆ φ ⁻¹' U :=
     have : φ '' A ⊆ d • V := image_preimage_subset _ _
     have : φ '' (A⁻¹ * A) ⊆ U := by
@@ -110,8 +109,8 @@ lemma automatic_continuity {φ : G →* H} (h: Measurable φ) : Continuous φ :=
             = (φ '' A⁻¹) * (φ '' A) := image_mul _
           _ = (φ '' A)⁻¹ * (φ '' A) := by rw [image_inv]
           _ ⊆ (d • V)⁻¹ * (d • V) := mul_subset_mul (inv_subset_inv.mpr this) this
-          _ = V⁻¹ * V := by
-              rw [inv_smul_set_distrib, Set.op_smul_set_mul_eq_mul_smul_set, inv_smul_smul]
+          _ = V⁻¹ * V := by rw [inv_smul_set_distrib,
+                                Set.op_smul_set_mul_eq_mul_smul_set, inv_smul_smul]
           _ ⊆ U := by rw [h_V_symm]; exact h_V_U
     image_subset_iff.mp this
   exact mem_of_superset h_pettis h_sub
