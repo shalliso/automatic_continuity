@@ -2,6 +2,7 @@ import Mathlib
 import AutomaticContinuity.Pointwise
 import AutomaticContinuity.Homeomorph
 import AutomaticContinuity.Baire
+import AutomaticContinuity.NonMeagre
 
 open Filter Set Topology Pointwise TopologicalSpace
 variable {X : Type*} [TopologicalSpace X]
@@ -46,8 +47,8 @@ lemma pettis_0 {A : Set G} {U : Set G} (hU : U ∈ 𝓝 1) (hAU : A =ᶠ[residua
       exact inv_subset.mp h44
     rw [← (smul_mem_nhds_smul_iff v)]
     simpa
-  have h_nm : NonMeagre ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G) := mt
-    (isMeagre_congr_residual h_res_eq).mp <| nonMeagre_of_mem_nhds h_mem_nhds
+  have h_nm : IsNonMeagre ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G) := mt
+    (isMeagre_congr_residual h_res_eq).mp <| IsNonMeagre.of_mem_nhds h_mem_nhds
   obtain ⟨g, hgA, hgAv⟩ : ((v⁻¹ • A⁻¹) ∩ A⁻¹ : Set G).Nonempty :=
     h_nm.nonempty
   have : (v * g) * g⁻¹ ∈ A⁻¹ * A :=
@@ -57,7 +58,7 @@ lemma pettis_0 {A : Set G} {U : Set G} (hU : U ∈ 𝓝 1) (hAU : A =ᶠ[residua
 theorem pettis {A : Set G} (hBM : BaireMeasurableSet A) (hA : ¬ IsMeagre A)
     : A⁻¹ * A ∈ nhds 1 := by
   obtain ⟨U, hU, AU⟩ := hBM.residualEq_isOpen
-  have : NonMeagre U := mt (isMeagre_congr_residual AU).mpr hA
+  have : IsNonMeagre U := mt (isMeagre_congr_residual AU).mpr hA
   obtain ⟨g, hg⟩ : U.Nonempty := this.nonempty
   have h_mem_nhds : g⁻¹ • U ∈ 𝓝 1 := by
     have : U ∈ 𝓝 g := by exact IsOpen.mem_nhds hU hg
@@ -86,7 +87,7 @@ lemma automatic_continuity {φ : G →* H} (h: Measurable φ) : Continuous φ :=
   have h_covers' : ⋃ h ∈ D, φ⁻¹' (h • V) = univ := by
     rw [←preimage_iUnion₂, h_covers]
     rfl
-  obtain ⟨d, _, h_nonmeagre⟩ : ∃ d ∈ D, ¬ IsMeagre (φ⁻¹' (d • V)) := by
+  obtain ⟨d, _, h_IsNonMeagre⟩ : ∃ d ∈ D, ¬ IsMeagre (φ⁻¹' (d • V)) := by
     by_contra h_contra
     simp [IsMeagre] at h_contra
 
@@ -96,11 +97,11 @@ lemma automatic_continuity {φ : G →* H} (h: Measurable φ) : Continuous φ :=
       exact (countable_bInter_mem hD_countable).mpr h_contra
 
     rw [h_covers'] at this
-    have a : NonMeagre (univ : Set G) := NonMeagre.univ
+    have a : IsNonMeagre (univ : Set G) := IsNonMeagre.univ
     contradiction
   set A := φ⁻¹' (d • V)
   have h_pettis : A⁻¹ * A ∈ nhds 1 :=
-    pettis ((h (h_V_open.smul d).measurableSet).baireMeasurableSet) h_nonmeagre
+    pettis ((h (h_V_open.smul d).measurableSet).baireMeasurableSet) h_IsNonMeagre
   have h_sub : A⁻¹ * A ⊆ φ ⁻¹' U :=
     have : φ '' A ⊆ d • V := image_preimage_subset _ _
     have : φ '' (A⁻¹ * A) ⊆ U := by
